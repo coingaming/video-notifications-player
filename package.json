@@ -4,13 +4,31 @@
   "description": "Yolo Holo Video Notification Frontend",
   "main": "index.tsx",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "storybook": "start-storybook -p 6006",
+    "build-storybook": "build-storybook"
   },
   "author": "",
   "license": "ISC",
-  "dependencies": {
+  "devDependencies": {
+    "@babel/core": "^7.17.7",
     "@heathmont/moon-assets": "^8.2.0",
+    "@storybook/addon-actions": "^6.4.19",
+    "@storybook/addon-essentials": "^6.4.19",
+    "@storybook/addon-interactions": "^6.4.19",
+    "@storybook/addon-links": "^6.4.19",
+    "@storybook/react": "^6.4.19",
+    "@storybook/testing-library": "0.0.9",
+    "babel-loader": "^8.2.3",
     "react": "^17.0.2",
+    "react-dom": "^17.0.2",
     "styled-components": "^5.3.3"
-  }
+  },
+  "peerDependencies": {
+    "react": "^17.0.2",
+    "@heathmont/moon-assets": "^8.2.0",
+    "styled-components": "^5.3.3",
+    "react-dom": "^17.0.2"
+  },
+  "dependencies": {}
 }
