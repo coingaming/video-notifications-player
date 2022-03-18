@@ -1,0 +1,16 @@
+{
+  "name": "video-notifications-player",
+  "version": "1.0.0",
+  "description": "Yolo Holo Video Notification Frontend",
+  "main": "index.tsx",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@heathmont/moon-assets": "^8.2.0",
+    "react": "^17.0.2",
+    "styled-components": "^5.3.3"
+  }
+}
