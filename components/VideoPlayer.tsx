@@ -1,7 +1,20 @@
-import React, { useState, useRef, useEffect, MediaHTMLAttributes } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  MediaHTMLAttributes,
+  useMemo,
+} from "react";
 import styled from "styled-components";
-import IconStart from "@heathmont/moon-assets/icons/IconStart";
-import IconStop from "@heathmont/moon-assets/icons/IconStop";
+import { IconRefresh, IconStart, IconStop } from "@heathmont/moon-assets";
+
+const usePrevious = <T,>(value: T) => {
+  const ref = useRef<T>();
+  useEffect(() => {
+    ref.current = value;
+  }, [value]);
+  return ref.current;
+};
 
 const Container = styled.div`
   position: relative;
@@ -40,21 +53,31 @@ const ActionButton = styled.button`
 `;
 
 const CONSTS = {
-  CDN: "https://sportsbet-io.imgix.net/video-notifications",
+  CDN: "https://sportsbet-io.imgix.net/video-notifications/",
 };
 
-const getUrls = (id: string) => {
-  return {
-    chrome_hd: `${CONSTS.CDN}/${id}.webm`,
-    safari_hd: `${CONSTS.CDN}/${id}.mov`,
-    thumbnail: `${CONSTS.CDN}/${id}-thumb.png`,
-  };
+const getAssetUrlFromCdn = (fileNameWithExtension: string) =>
+  `${CONSTS.CDN}${fileNameWithExtension}`;
+
+const getRawVideoUrl = (fileName: string, extension = "mp4") =>
+  getAssetUrlFromCdn(`${fileName}.${extension}`);
+
+const getEditedVideoUrl = (fileName: string) => {
+  var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const format = isSafari ? ".mov" : ".webm";
+  return getAssetUrlFromCdn(`${fileName}${format}`);
 };
 
-type CustomUrlTypes = {
-  chrome_hd: string;
-  safari_hd: string;
-  thumbnail: string;
+export const getVideoThumbnail = (fileName: string) =>
+  getAssetUrlFromCdn(`${fileName}-thumb.png`);
+
+export const getVideoUrl = (fileName?: string, extension?: string) => {
+  if (!fileName || !fileName.includes("yoloholo")) {
+    return null;
+  }
+  return fileName.includes("-raw-")
+    ? getRawVideoUrl(fileName, extension)
+    : getEditedVideoUrl(fileName);
 };
 
 type PlayButtonStyleTypes = {
@@ -72,12 +95,20 @@ type HoloVideoTypes = {
   className?: string;
   width?: string | number;
   height?: string | number;
-  customUrls?: CustomUrlTypes;
   playButtonStyle?: PlayButtonStyleTypes;
 };
 
-type VideoStates = "loading" | "playing" | "paused" | "ended" | "error";
-type VideoStatus = "playable" | "unplayable";
+type VideoStates =
+  | "progress"
+  | "play"
+  | "pause"
+  | "ended"
+  | "error"
+  | "canplaythrough"
+  | "canplay"
+  | "timeupdate";
+
+type VideoStatus = "playing" | "pause" | "ended" | "loading";
 
 const HoloVideo = ({
   autoPlay = false,
@@ -86,7 +117,6 @@ const HoloVideo = ({
   playsInline = false,
   videoId,
   className,
-  customUrls,
   width = 220,
   height = "100%",
   playButtonStyle = {
@@ -96,18 +126,21 @@ const HoloVideo = ({
   },
 }: HoloVideoTypes) => {
   const [isVideoScreen, setVideoScreen] = useState(autoPlay);
-  const [videoState, setVideoState] = useState<VideoStates>("loading");
-  const [videoStatus, setVideoStatus] = useState<VideoStatus>("unplayable");
+  const [videoState, setVideoState] = useState<VideoStates>("progress");
+  const [videoStatus, setVideoStatus] = useState<VideoStatus>("loading");
+  const prevVideoState = usePrevious<VideoStates>(videoState);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const videoSrc = getVideoUrl(videoId);
+  const thumbnailSrc = getVideoThumbnail(videoId);
 
   // add event listener to video state
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.addEventListener("play", () => {
-        setVideoState("playing");
+        setVideoState("play");
       });
       videoRef.current.addEventListener("pause", () => {
-        setVideoState("paused");
+        setVideoState("pause");
       });
       videoRef.current.addEventListener("ended", () => {
         setVideoState("ended");
@@ -117,35 +150,63 @@ const HoloVideo = ({
           videoRef?.current?.currentTime &&
           videoRef?.current?.currentTime > 0
         ) {
-          setVideoState("playing");
+          setVideoState("timeupdate");
         }
       });
       videoRef.current.addEventListener("progress", () => {
-        setVideoState("loading");
+        setVideoState("progress");
       });
       videoRef.current.addEventListener("canplay", () => {
-        setVideoStatus("playable");
-      });
-      videoRef.current.addEventListener("canplaythrough", () => {
-        setVideoStatus("playable");
+        setVideoState("canplay");
+        setVideoScreen(true);
       });
       videoRef.current.addEventListener("error", () => {
-        setVideoState("error");
         console.error("error");
       });
     }
   }, [videoRef]);
 
-  if (!videoId) {
+  useEffect(() => {
+    if (videoState === "ended") {
+      setVideoStatus("ended");
+      return;
+    }
+    if (
+      ["canplay", "canplaythrough"].includes(videoState) &&
+      ["progress", undefined].includes(prevVideoState)
+    ) {
+      setVideoStatus("pause");
+    }
+    if (videoState === "pause") {
+      setVideoStatus("pause");
+    }
+    if (videoState === "play") {
+      setVideoStatus("playing");
+    }
+  }, [videoState, prevVideoState]);
+
+  const icon = useMemo(() => {
+    if (videoStatus === "playing") {
+      return <IconStop />;
+    }
+    if (videoStatus === "ended") {
+      return <IconRefresh />;
+    }
+    if (videoStatus === "pause") {
+      return <IconStart />;
+    }
+    return null;
+  }, [videoStatus]);
+
+  if (!videoId || !videoSrc) {
     return null;
   }
-  const { chrome_hd, safari_hd, thumbnail } = getUrls(videoId);
   const onThumbnailClick = () => {
     setVideoScreen(true);
     videoRef.current?.play();
   };
   const onVideoClick = () => {
-    videoRef.current?.[videoState === "playing" ? "pause" : "play"]();
+    videoRef.current?.[videoStatus === "playing" ? "pause" : "play"]();
   };
   return (
     <Container
@@ -157,35 +218,27 @@ const HoloVideo = ({
     >
       {!autoPlay && !isVideoScreen && (
         <img
-          src={thumbnail}
+          src={thumbnailSrc}
           alt=""
           className="holo-thumbnail"
           style={{ width, height }}
           onClick={onThumbnailClick}
         />
       )}
-      {videoState !== "loading" && (
-        <ActionButton>
-          {videoState !== "playing" ? <IconStop /> : <IconStart />}
-        </ActionButton>
-      )}
+      {videoStatus !== "loading" && <ActionButton>{icon}</ActionButton>}
 
       <video
         ref={videoRef}
         width={width}
         height={height}
         className="holo-video"
-        autoPlay={isVideoScreen}
+        autoPlay={autoPlay}
         loop={loop}
         muted={muted}
         playsInline={playsInline}
         onClick={onVideoClick}
       >
-        <source
-          src={customUrls?.safari_hd || safari_hd}
-          type='video/mp4; codecs="hvc1"'
-        />
-        <source src={customUrls?.chrome_hd || chrome_hd} type="video/webm" />
+        <source src={videoSrc} />
       </video>
     </Container>
   );

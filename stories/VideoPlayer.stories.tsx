@@ -5,5 +5,7 @@ import VideoPlayer from "../components/VideoPlayer";
 const stories = storiesOf("Video player", module);
 
 stories.add("App", () => {
-  return <VideoPlayer videoId="fcafb94c-4102-4bef-afc2-ba5db35f1f45" />;
+  return (
+    <VideoPlayer videoId="yoloholo-5a517a10-6708-4b1a-96e8-653aa90e9019" />
+  );
 });
