@@ -69,7 +69,7 @@ const getEditedVideoUrl = (fileName: string) => {
 };
 
 export const getVideoThumbnail = (fileName: string) =>
-  getAssetUrlFromCdn(`${fileName}-thumb.png`);
+  getAssetUrlFromCdn(`${fileName}-thumb.webp`);
 
 export const getVideoUrl = (fileName?: string, extension?: string) => {
   if (!fileName || !fileName.includes("yoloholo")) {
