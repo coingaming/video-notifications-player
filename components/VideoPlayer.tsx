@@ -38,6 +38,8 @@ const Container = styled.div`
       opacity: 1;
     }
   }
+  width: ${(props) => (props.width || `320px`)};
+  height: ${(props) => (props.height || `568px`)};
 `;
 
 const ActionButton = styled.button`
@@ -50,6 +52,44 @@ const ActionButton = styled.button`
   outline: none;
   z-index: 1;
   pointer-events: none;
+`;
+
+const ThumbnailContainer = styled.div`
+   width: ${(props) => (props.width || `320px`)};
+   height: ${(props) => (props.height || `568px`)};
+   position: relative;
+   overflow: hidden;
+   display: flex;
+`;
+
+const Thumbnail = styled.img`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  flex: 1;
+`;
+
+const VideoContainer = styled.div`
+  width: ${(props) => (props.width || `320px`)};
+  height: ${(props) => (props.height || `568px`)};
+  position: relative;
+  overflow: hidden;
+`;
+
+const Video = styled.video`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
 `;
 
 const CONSTS = {
@@ -93,8 +133,8 @@ type HoloVideoTypes = {
   playsInline?: MediaHTMLAttributes<HTMLVideoElement>["playsInline"];
   videoId: string;
   className?: string;
-  width?: string | number;
-  height?: string | number;
+  width?: string;
+  height?: string;
   playButtonStyle?: PlayButtonStyleTypes;
 };
 
@@ -117,8 +157,8 @@ const HoloVideo = ({
   playsInline = false,
   videoId,
   className,
-  width = 220,
-  height = "100%",
+  width = '320px',
+  height = "568px",
   playButtonStyle = {
     iconColor: "#fff",
     iconSize: "2rem",
@@ -185,7 +225,16 @@ const HoloVideo = ({
     }
   }, [videoState, prevVideoState]);
 
+  useEffect(() => {
+    if (isVideoScreen) {
+      videoRef.current?.play();
+    }
+  }, [isVideoScreen]);
+
   const icon = useMemo(() => {
+    if (!isVideoScreen) {
+      return <IconStart />;
+    }
     if (videoStatus === "playing") {
       return <IconStop />;
     }
@@ -196,14 +245,13 @@ const HoloVideo = ({
       return <IconStart />;
     }
     return null;
-  }, [videoStatus]);
+  }, [videoStatus, isVideoScreen]);
 
   if (!videoId || !videoSrc) {
     return null;
   }
   const onThumbnailClick = () => {
     setVideoScreen(true);
-    videoRef.current?.play();
   };
   const onVideoClick = () => {
     videoRef.current?.[videoStatus === "playing" ? "pause" : "play"]();
@@ -215,31 +263,37 @@ const HoloVideo = ({
       }
       hidden={!isVideoScreen}
       {...playButtonStyle}
+      width={width}
+      height={height}
     >
       {!autoPlay && !isVideoScreen && (
-        <img
+        <ThumbnailContainer
           src={thumbnailSrc}
-          alt=""
-          className="holo-thumbnail"
-          style={{ width, height }}
+          width={width}
+          height={height}
           onClick={onThumbnailClick}
-        />
+        >
+          <Thumbnail
+            src={thumbnailSrc}   
+          />
+        </ThumbnailContainer>
       )}
-      {videoStatus !== "loading" && <ActionButton>{icon}</ActionButton>}
-
-      <video
-        ref={videoRef}
-        width={width}
-        height={height}
-        className="holo-video"
-        autoPlay={autoPlay}
-        loop={loop}
-        muted={muted}
-        playsInline={playsInline}
-        onClick={onVideoClick}
-      >
-        <source src={videoSrc} />
-      </video>
+      <ActionButton>{icon}</ActionButton>
+      <VideoContainer width={width} height={height}>
+        <Video
+          ref={videoRef}
+          width={width}
+          height={height}
+          className="holo-video"
+          autoPlay={autoPlay}
+          loop={loop}
+          muted={muted}
+          playsInline={playsInline}
+          onClick={onVideoClick}
+          src={isVideoScreen ? videoSrc : undefined}
+        />
+      </VideoContainer>
+      
     </Container>
   );
 };
