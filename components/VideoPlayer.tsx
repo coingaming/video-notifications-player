@@ -8,14 +8,6 @@ import React, {
 import styled from "styled-components";
 import { IconRefresh, IconStart, IconStop } from "@heathmont/moon-assets";
 
-const usePrevious = <T,>(value: T) => {
-  const ref = useRef<T>();
-  useEffect(() => {
-    ref.current = value;
-  }, [value]);
-  return ref.current;
-};
-
 const Container = styled.div`
   position: relative;
   display: inline-block;
@@ -136,6 +128,7 @@ type HoloVideoTypes = {
   width?: string;
   height?: string;
   playButtonStyle?: PlayButtonStyleTypes;
+  onVideoClick?: (action: 'play' | 'pause') => void;
 };
 
 type VideoStates =
@@ -162,13 +155,13 @@ const HoloVideo = ({
   playButtonStyle = {
     iconColor: "#fff",
     iconSize: "2rem",
-    iconBackgroundColor: "transparent",
+    iconBackgroundColor: "transparent", 
   },
+  onVideoClick: srcOnVideoClick,
 }: HoloVideoTypes) => {
   const [isVideoScreen, setVideoScreen] = useState(autoPlay);
   const [videoState, setVideoState] = useState<VideoStates>("progress");
   const [videoStatus, setVideoStatus] = useState<VideoStatus>("loading");
-  const prevVideoState = usePrevious<VideoStates>(videoState);
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoSrc = getVideoUrl(videoId);
   const thumbnailSrc = getVideoThumbnail(videoId);
@@ -211,25 +204,19 @@ const HoloVideo = ({
       setVideoStatus("ended");
       return;
     }
-    if (
-      ["canplay", "canplaythrough"].includes(videoState) &&
-      ["progress", undefined].includes(prevVideoState)
-    ) {
-      setVideoStatus("pause");
-    }
     if (videoState === "pause") {
       setVideoStatus("pause");
     }
     if (videoState === "play") {
       setVideoStatus("playing");
     }
-  }, [videoState, prevVideoState]);
+  }, [videoState]);
 
   useEffect(() => {
-    if (isVideoScreen) {
+    if (isVideoScreen && !autoPlay) {
       videoRef.current?.play();
     }
-  }, [isVideoScreen]);
+  }, [isVideoScreen, autoPlay]);
 
   const icon = useMemo(() => {
     if (!isVideoScreen) {
@@ -254,7 +241,11 @@ const HoloVideo = ({
     setVideoScreen(true);
   };
   const onVideoClick = () => {
-    videoRef.current?.[videoStatus === "playing" ? "pause" : "play"]();
+    const action = videoStatus === "playing" ? "pause" : "play";
+    if (srcOnVideoClick) {
+      srcOnVideoClick(action);
+    }
+    videoRef.current?.[action]();
   };
   return (
     <Container
@@ -293,7 +284,6 @@ const HoloVideo = ({
           src={isVideoScreen ? videoSrc : undefined}
         />
       </VideoContainer>
-      
     </Container>
   );
 };
