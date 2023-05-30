@@ -5,84 +5,8 @@ import React, {
   MediaHTMLAttributes,
   useMemo,
 } from "react";
-import styled from "styled-components";
 import { IconRefresh, IconStart, IconStop } from "@heathmont/moon-assets";
-
-const Container = styled.div`
-  position: relative;
-  display: inline-block;
-  width: fit-content;
-  cursor: pointer;
-  button {
-    opacity: 0;
-    background: ${(props: any) => props?.iconBackgroundColor || "transparent"};
-    svg {
-      color: ${(props: any) => props?.iconColor || "#fff"};
-      font-size: ${(props: any) => props?.iconSize || "2rem"};
-    }
-  }
-  video {
-    display: ${(props) => (props.hidden ? "none" : "block")};
-  }
-  &:hover,
-  &:focus {
-    button {
-      opacity: 1;
-    }
-  }
-  width: ${(props) => (props.width || `320px`)};
-  height: ${(props) => (props.height || `568px`)};
-`;
-
-const ActionButton = styled.button`
-  position: absolute;
-  transition: opacity 0.2s ease-in-out;
-  top: 65%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  border: none;
-  outline: none;
-  z-index: 1;
-  pointer-events: none;
-`;
-
-const ThumbnailContainer = styled.div`
-   width: ${(props) => (props.width || `320px`)};
-   height: ${(props) => (props.height || `568px`)};
-   position: relative;
-   overflow: hidden;
-   display: flex;
-`;
-
-const Thumbnail = styled.img`
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  min-width: 100%;
-  min-height: 100%;
-  width: auto;
-  height: auto;
-  flex: 1;
-`;
-
-const VideoContainer = styled.div`
-  width: ${(props) => (props.width || `320px`)};
-  height: ${(props) => (props.height || `568px`)};
-  position: relative;
-  overflow: hidden;
-`;
-
-const Video = styled.video`
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  min-width: 100%;
-  min-height: 100%;
-  width: auto;
-  height: auto;
-`;
+import '../styles.css';
 
 const CONSTS = {
   CDN: "https://sportsbet-io.imgix.net/video-notifications/",
@@ -165,7 +89,7 @@ const HoloVideo = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoSrc = getVideoUrl(videoId);
   const thumbnailSrc = getVideoThumbnail(videoId);
-
+  const { iconColor, iconSize, iconBackgroundColor } = playButtonStyle;
   // add event listener to video state
   useEffect(() => {
     if (videoRef.current) {
@@ -219,24 +143,25 @@ const HoloVideo = ({
   }, [isVideoScreen, autoPlay]);
 
   const icon = useMemo(() => {
+    const props = {
+      color: iconColor,
+      fontSize: iconSize,
+    };
     if (!isVideoScreen) {
-      return <IconStart />;
+      return <IconStart {...props} />;
     }
     if (videoStatus === "playing") {
-      return <IconStop />;
+      return <IconStop {...props} />;
     }
     if (videoStatus === "ended") {
-      return <IconRefresh />;
+      return <IconRefresh {...props} />;
     }
     if (videoStatus === "pause") {
-      return <IconStart />;
+      return <IconStart {...props} />;
     }
     return null;
-  }, [videoStatus, isVideoScreen]);
-
-  if (!videoId || !videoSrc) {
-    return null;
-  }
+  }, [videoStatus, isVideoScreen, iconColor, iconSize]);
+ 
   const onThumbnailClick = () => {
     setVideoScreen(true);
   };
@@ -247,35 +172,33 @@ const HoloVideo = ({
     }
     videoRef.current?.[action]();
   };
+
+  if (!videoId || !videoSrc) {
+    return null;
+  }
+
   return (
-    <Container
-      className={
-        (className && `holo-container ${className}`) || "holo-container"
-      }
-      hidden={!isVideoScreen}
-      {...playButtonStyle}
-      width={width}
-      height={height}
+    <div
+      className={(className && `holo-container ${className}`) || "holo-container"}
+      style={{width, height}}
     >
       {!autoPlay && !isVideoScreen && (
-        <ThumbnailContainer
-          src={thumbnailSrc}
-          width={width}
-          height={height}
+        <div
+          className="holo-thumb-container"
+          style={{width: width || '100%', height: height || '100%'}}
           onClick={onThumbnailClick}
         >
-          <Thumbnail
+          <img
             src={thumbnailSrc}   
           />
-        </ThumbnailContainer>
+        </div>
       )}
-      <ActionButton>{icon}</ActionButton>
-      <VideoContainer width={width} height={height}>
-        <Video
+      <button style={{background: iconBackgroundColor || "transparent"}}>{icon}</button>
+      <div className="holo-video-container" style={{width, height}}>
+        <video
           ref={videoRef}
-          width={width}
-          height={height}
-          className="holo-video"
+          width={width || 'auto'}
+          height={height || 'auto'}
           autoPlay={autoPlay}
           loop={loop}
           muted={muted}
@@ -283,8 +206,8 @@ const HoloVideo = ({
           onClick={onVideoClick}
           src={isVideoScreen ? videoSrc : undefined}
         />
-      </VideoContainer>
-    </Container>
+      </div>
+    </div>
   );
 };
 
