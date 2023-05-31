@@ -53,6 +53,8 @@ type HoloVideoTypes = {
   height?: string;
   playButtonStyle?: PlayButtonStyleTypes;
   onVideoClick?: (action: 'play' | 'pause') => void;
+  onVideoEnd?: () => void;
+  onVideoLoad?: () => void;
 };
 
 type VideoStates =
@@ -82,6 +84,8 @@ const HoloVideo = ({
     iconBackgroundColor: "transparent", 
   },
   onVideoClick: srcOnVideoClick,
+  onVideoEnd: srcOnVideoEnd,
+  onVideoLoad: srcOnVideoLoad,
 }: HoloVideoTypes) => {
   const [isVideoScreen, setVideoScreen] = useState(autoPlay);
   const [videoState, setVideoState] = useState<VideoStates>("progress");
@@ -90,6 +94,15 @@ const HoloVideo = ({
   const videoSrc = getVideoUrl(videoId);
   const thumbnailSrc = getVideoThumbnail(videoId);
   const { iconColor, iconSize, iconBackgroundColor } = playButtonStyle;
+  const isLoaded = useRef(false)
+ 
+  useEffect(() => {
+    if (!isLoaded.current && srcOnVideoLoad) {
+      srcOnVideoLoad();
+    }
+   isLoaded.current = true; 
+  }, [srcOnVideoLoad])
+  
   // add event listener to video state
   useEffect(() => {
     if (videoRef.current) {
@@ -125,6 +138,9 @@ const HoloVideo = ({
 
   useEffect(() => {
     if (videoState === "ended") {
+      if (srcOnVideoEnd) {
+        srcOnVideoEnd();
+      }
       setVideoStatus("ended");
       return;
     }
@@ -134,7 +150,7 @@ const HoloVideo = ({
     if (videoState === "play") {
       setVideoStatus("playing");
     }
-  }, [videoState]);
+  }, [videoState, srcOnVideoEnd]);
 
   useEffect(() => {
     if (isVideoScreen && !autoPlay) {
@@ -164,6 +180,9 @@ const HoloVideo = ({
  
   const onThumbnailClick = () => {
     setVideoScreen(true);
+    if (srcOnVideoClick) {
+      srcOnVideoClick("play");
+    }
   };
   const onVideoClick = () => {
     const action = videoStatus === "playing" ? "pause" : "play";
